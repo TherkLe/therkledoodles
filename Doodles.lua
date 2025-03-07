@@ -782,17 +782,19 @@ SMODS.Joker{
     eternal_compat = true, 
     perishable_compat = true,
 	pos = {x = 1, y = 3},
-	config = {extra = { dollars = 25, odds = 2 } },
+	config = {extra = { dollars = 25, odds = 2, destroycheck = false } },
 	loc_vars = function(card, info_queue, card)
 		info_queue[#info_queue + 1] = G.P_CENTERS['m_stone']
-		return { vars = { card.ability.extra.dollars, (G.GAME.probabilities.normal or 1), card.ability.extra.odds } }
+		return { vars = { card.ability.extra.dollars, (G.GAME.probabilities.normal or 1), card.ability.extra.odds, card.ability.extra.destroycheck } }
 	end,
 	calculate = function(self, card, context)
 		if context.before and context.cardarea == G.jokers then
+			card.ability.extra.destroycheck = false
 			if G.GAME.current_round.hands_played == 0 then
 				if #context.full_hand == 1 then
 					if SMODS.has_enhancement(context.full_hand[1], 'm_stone') then
 						if pseudorandom('miner') < G.GAME.probabilities.normal / card.ability.extra.odds then
+							card.ability.extra.destroycheck = true
                				return {
 							dollars = card.ability.extra.dollars,
                     		delay = 0.45, 
@@ -803,7 +805,7 @@ SMODS.Joker{
 				end
 			end
 		end
-		if context.destroy_card and context.cardarea == G.play then
+		if context.destroy_card and context.cardarea == G.play and card.ability.extra.destroycheck == true then
 			return {
 				remove = true
 			}
@@ -900,4 +902,223 @@ SMODS.Joker{
 		end
 	end
 }
-
+SMODS.Joker{
+	key = 'jouka',
+	loc_txt = {
+		name = 'Manga Joker',
+		text = {
+			'Creates a random {C:tarot}Tarot{} card if played hand',
+			'only contains {C:spades}Spade{} cards.',
+			'{C:inactive}(High Card excluded)'
+		}
+	},
+	atlas = 'jokers',
+	rarity = 2,
+	cost = 8,
+	unlocked = true,
+	discovered = false,
+	blueprint_compat = true, 
+    eternal_compat = true, 
+    perishable_compat = true,
+	config = {extra = { Xchips = 3 } },
+	pos = {x = 0, y = 4},
+	loc_vars = function(card, info_queue, card)
+		return { vars = { card.ability.extra.Xchips } }
+	end,
+	calculate = function(self, card, context)
+		if context.joker_main then
+			local spades = true
+			for _, v in ipairs(context.scoring_hand) do
+				spades = spades and v:is_suit('Spades')
+				if not spades then break end
+			end
+			if spades == true then
+				if context.poker_hand ~= "High Card" then
+					G.GAME.consumeable_buffer = G.GAME.consumeable_buffer + 1
+					G.E_MANAGER:add_event(Event({
+					trigger = 'before',
+					delay = 0.0,
+					func = (function()
+						local card = create_card('Tarot', G.consumeables, nil, nil, nil, nil, nil, 'jou')
+						card:add_to_deck()
+						G.consumeables:emplace(card)
+						G.GAME.consumeable_buffer = 0
+						return true
+					end)}))
+					return {
+						message = localize('k_plus_tarot'),
+						card = card
+					}
+				end
+			end
+		end
+	end
+}
+SMODS.Joker{
+	key = 'pen',
+	loc_txt = {
+		name = 'Pen Doodle',
+		text = {
+			'Retrigger all cards if played hand',
+			'only contains {C:clubs}Club{} cards.',
+		}
+	},
+	atlas = 'jokers',
+	rarity = 3,
+	cost = 10,
+	unlocked = true,
+	discovered = false,
+	blueprint_compat = true, 
+    eternal_compat = true, 
+    perishable_compat = true,
+	config = {extra = { } },
+	pos = {x = 1, y = 4},
+	loc_vars = function(card, info_queue, card)
+		return { vars = { } }
+	end,
+	calculate = function(self, card, context)
+		if context.repetition and context.cardarea == G.play then
+			local clubs = true
+			for _, v in ipairs(context.scoring_hand) do
+				  clubs = clubs and v:is_suit('Clubs')
+				  if not clubs then break end
+			end
+			if clubs == true then
+				return {
+					message = localize('k_again_ex'),
+					repetitions = 1,
+					card = card
+				}
+			end
+		end
+	end
+}
+SMODS.Joker{
+	key = 'lover',
+	loc_txt = {
+		name = 'Love Letter',
+		text = {
+			'Played {C:hearts}Heart{} cards have a',
+			'{C:green}#2# in #3#{} chance to give {X:mult,C:white}X#1#{} mult,',
+			'or not score at all.'
+		}
+	},
+	atlas = 'jokers',
+	rarity = 2,
+	cost = 10,
+	unlocked = true,
+	discovered = false,
+	blueprint_compat = true, 
+    eternal_compat = true, 
+    perishable_compat = true,
+	config = {extra = { Xmult = 2, odds = 2 } },
+	pos = {x = 2, y = 4},
+	loc_vars = function(card, info_queue, card)
+		return { vars = { card.ability.extra.Xmult, (G.GAME.probabilities.normal or 1), card.ability.extra.odds } }
+	end,
+	calculate = function(self, card, context)
+		if context.individual and context.cardarea == G.play then
+			return {
+				Xmult_mod = card.ability.extra.Xmult,
+				message = 'X' .. card.ability.extra.Xmult,
+				card = card
+			}
+		end
+		if context.modify_scoring_hand then
+			if pseudorandom('lover') < G.GAME.probabilities.normal / card.ability.extra.odds then
+				return {
+					remove_from_hand = true,
+				}
+			end
+		end		
+	end
+}
+SMODS.Joker{
+	key = 'highlight',
+	loc_txt = {
+		name = 'Highlighted Joker',
+		text = {
+			'{X:red,C:white}X#2#{} for every Enhanced {C:diamonds}Diamond{} card',
+			'currently in deck.',
+			'{C:inactive}(Currently {X:mult,C:white}X#1#{C:inactive} mult.)'
+		}
+	},
+	atlas = 'jokers',
+	rarity = 3,
+	cost = 10,
+	unlocked = true,
+	discovered = false,
+	blueprint_compat = true, 
+    eternal_compat = true, 
+    perishable_compat = true,
+	config = {extra = { Xmult = 1, Xmult_gain = 0.1, count = 0 } },
+	pos = {x = 3, y = 4},
+	loc_vars = function(card, info_queue, card)
+		return { vars = { card.ability.extra.Xmult, card.ability.extra.Xmult_gain, card.ability.extra.count } }
+	end,
+	calculate = function(self, card, context)
+		if not context.blueprint then
+			card.ability.extra.count = 0
+			for k, v in pairs(G.playing_cards) do
+				if v.ability.set == 'Enhanced' and v:is_suit('Diamonds') and not context.blueprint then card.ability.extra.count = card.ability.extra.count+1 end
+			end
+			card.ability.extra.Xmult = (1 + (card.ability.extra.count*card.ability.extra.Xmult_gain))
+		end
+		if context.joker_main and card.ability.extra.Xmult > 1 then
+			return {
+				Xmult_mod = card.ability.extra.Xmult,
+				message = 'X' .. card.ability.extra.Xmult,
+				colour = G.C.MULT
+			}
+		end
+	end
+}
+SMODS.Joker{
+	key = 'goobert',
+	loc_txt = {
+		name = 'Goobertito',
+		text = {
+			'This Joker gains {C:chips}+#2#{} chips', 
+			'for every {C:attention}15{} {C:inactive}(#3#)',
+			'{C:hearts} Heart{} or {C:diamonds}Diamond',
+			'cards scored.',
+			'{C:inactive}(Currently {C:chips}+#1#{C:inactive} chips.)'
+		}
+	},
+	atlas = 'jokers',
+	rarity = 2,
+	cost = 7,
+	unlocked = true,
+	discovered = false,
+	blueprint_compat = true, 
+    eternal_compat = true, 
+    perishable_compat = true,
+	config = {extra = { chips = 0, chip_gain = 25, cardsleft = 15 } },
+	pos = {x = 4, y = 4},
+	loc_vars = function(card, info_queue, card)
+		return { vars = { card.ability.extra.chips, card.ability.extra.chip_gain, card.ability.extra.cardsleft} }
+	end,
+	calculate = function(self, card, context)
+		if context.individual and context.cardarea == G.play then
+			if context.other_card:is_suit('Hearts') or context.other_card:is_suit('Diamonds') and card.ability.extra.cardsleft > 0 then
+				card.ability.extra.cardsleft = card.ability.extra.cardsleft - 1
+			end
+			if card.ability.extra.cardsleft <= 0 and not context.blueprint then
+				card.ability.extra.chips = card.ability.extra.chips + card.ability.extra.chip_gain
+				card.ability.extra.cardsleft = 5
+				return {
+					message = localize('k_upgrade_ex'),
+					colour = G.C.CHIPS,
+					card = card
+				}
+			end
+		end
+		
+		if context.joker_main and card.ability.extra.chips > 0 then
+			return {
+				chip_mod = card.ability.extra.chips,
+				message = localize { type = 'variable', key = 'a_chips', vars = {card.ability.extra.chips} }
+			}
+		end
+	end
+}
