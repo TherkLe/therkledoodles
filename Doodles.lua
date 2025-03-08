@@ -1017,14 +1017,14 @@ SMODS.Joker{
 		return { vars = { card.ability.extra.Xmult, (G.GAME.probabilities.normal or 1), card.ability.extra.odds } }
 	end,
 	calculate = function(self, card, context)
-		if context.individual and context.cardarea == G.play then
+		if context.individual and context.cardarea == G.play and context.other_card:is_suit('Hearts') then
 			return {
 				Xmult_mod = card.ability.extra.Xmult,
 				message = 'X' .. card.ability.extra.Xmult,
 				card = card
 			}
 		end
-		if context.modify_scoring_hand then
+		if context.modify_scoring_hand and context.other_card:is_suit('Hearts') then
 			if pseudorandom('lover') < G.GAME.probabilities.normal / card.ability.extra.odds then
 				return {
 					remove_from_hand = true,
