@@ -40,6 +40,19 @@ SMODS.Atlas{
     py = 256
 }
 
+SMODS.Rarity{
+	key = 'ulti',
+	loc_txt = {
+		name = 'Ultimate'
+	},
+	badge_colour = HEX('4f6367'),
+	default_weight = 0,
+	pools = {},
+	get_weight = function(self, weight, object_type)
+        return weight
+    end
+}
+
 SMODS.Joker{
 	key = 'breakingnews',
   	loc_txt = {
@@ -852,7 +865,8 @@ SMODS.Joker{
 		name = 'Flushpilled Joker',
 		text = {
 			'This joker gains {X:mult,C:white}X0.25{} mult',
-			'per consecutive flush played.'
+			'per consecutive flush played.',
+			"{C:inactive}(Currently {X:mult,C:white}X#1#{C:inactive} mult)"
 
 		}
 	},
@@ -1119,6 +1133,286 @@ SMODS.Joker{
 				chip_mod = card.ability.extra.chips,
 				message = localize { type = 'variable', key = 'a_chips', vars = {card.ability.extra.chips} }
 			}
+		end
+	end
+}
+SMODS.Joker{
+	key = 'leye',
+	loc_txt = {
+		name = 'Left Eye of the Ultijoker',
+		text = {
+			'Each played {C:attention}Ace, 2, 3, 4,{} or {C:attention}5{} gives',
+			'{X:mult,C:white}X1.5{} mult when scored.',
+			'{C:inactive}If both eyes are present at end of round,',
+			'{C:inactive}Joker is destroyed and {C:attention}Ultijoker{C:inactive} is created.'
+		}
+	},
+	atlas = 'jokers',
+	rarity = 3,
+	cost = 10,
+	no_pool_flag = 'left_eye_present',
+	unlocked = true,
+	discovered = false,
+	blueprint_compat = true, 
+    eternal_compat = true, 
+    perishable_compat = true,
+	config = {extra = { Xmult = 1.5 } },
+	pos = {x = 0, y = 5},
+	loc_vars = function(card, info_queue, card)
+		return { vars = { card.ability.extra.Xmult } }
+	end,
+	calculate = function(self, card, context)
+		G.GAME.pool_flags.left_eye_present = true
+		if context.selling_self then
+			G.GAME.pool_flags.left_eye_present = false
+		end
+		if context.end_of_round and G.GAME.pool_flags.left_eye_present == true and G.GAME.pool_flags.right_eye_present == true and not context.repetition and not context.blueprint  and context.game_over == false and context.cardarea == G.jokers then
+			G.E_MANAGER:add_event(Event({
+				func = function()
+					play_sound('tarot1')
+					card.T.r = -0.2
+					card:juice_up(0.3, 0.4)
+					card.states.drag.is = true
+					card.children.center.pinch.x = true
+					G.E_MANAGER:add_event(Event({
+						trigger = 'after',
+						delay = 0.3,
+						blockable = false,
+						func = function()
+							G.jokers:remove_card(card)
+							card:remove()
+							card = nil
+							return true;
+						end
+					}))
+					return true
+				end
+			}))
+			return {
+				message = 'Merge!'
+			}
+		end
+		if context.individual and context.cardarea == G.play then
+			if context.other_card:get_id() == 14 or context.other_card:get_id() == 2 or context.other_card:get_id() == 3 or context.other_card:get_id() == 4 or context.other_card:get_id() == 5 then
+				return {
+					xmult = card.ability.extra.Xmult
+				}
+			end
+		end
+	end
+}
+SMODS.Joker{
+	key = 'reye',
+	loc_txt = {
+		name = 'Right Eye of the Ultijoker',
+		text = {
+			'Each played {C:attention}6, 7, 8, 9,{} or {C:attention}10{} gives',
+			'double their rank in {C:chips}chips{}.',
+			'{C:inactive}If both eyes are present at end of round,',
+			'{C:inactive}Joker is destroyed and {C:attention}Ultijoker{C:inactive} is created.'
+		}
+	},
+	atlas = 'jokers',
+	rarity = 3,
+	cost = 10,
+	no_pool_flag = 'right_eye_present',
+	unlocked = true,
+	discovered = false,
+	blueprint_compat = true, 
+    eternal_compat = true, 
+    perishable_compat = true,
+	config = {extra = { chips = 0 } },
+	pos = {x = 1, y = 5},
+	loc_vars = function(card, info_queue, card)
+		return { vars = { card.ability.extra.chips } }
+	end,
+	calculate = function(self, card, context)
+		G.GAME.pool_flags.right_eye_present = true
+		if context.selling_self then
+			G.GAME.pool_flags.right_eye_present = false
+		end
+		if context.end_of_round and G.GAME.pool_flags.left_eye_present == true and G.GAME.pool_flags.right_eye_present == true and not context.repetition and not context.blueprint  and context.game_over == false and context.cardarea == G.jokers then
+			G.E_MANAGER:add_event(Event({
+				func = function()
+					play_sound('tarot1')
+					card.T.r = -0.2
+					card:juice_up(0.3, 0.4)
+					card.states.drag.is = true
+					card.children.center.pinch.x = true
+					G.E_MANAGER:add_event(Event({
+						trigger = 'after',
+						delay = 0.3,
+						blockable = false,
+						func = function()
+							G.jokers:remove_card(card)
+							card:remove()
+							card = nil
+							return true;
+						end
+					}))
+					return true
+				end
+			}))
+			SMODS.add_card({
+				set = "Joker",
+				key = "j_doodl_ulti"
+			})
+			return {
+				message = 'Merge!'
+			}
+		end
+		if context.individual and context.cardarea == G.play then
+			if context.other_card:get_id() == 6 or context.other_card:get_id() == 7 or context.other_card:get_id() == 8 or context.other_card:get_id() == 9 or context.other_card:get_id() == 10 then
+				card.ability.extra.chips = context.other_card:get_id() * 2
+				return {
+					chips = card.ability.extra.chips
+				}
+			end
+		end
+	end
+}
+SMODS.Joker{
+	key = 'ulti',
+	loc_txt = {
+		name = 'The Ultijoker',
+		text = {
+			'Each played {C:attention}face{} card gives {X:mult,C:white}X2{} mult.',
+			'Each played card gives',
+			'quadruple their rank in {C:chips}chips.'
+		}
+	},
+	atlas = 'jokers',
+	rarity = 'doodl_ulti',
+	cost = 10,
+	unlocked = true,
+	discovered = false,
+	blueprint_compat = true, 
+    eternal_compat = true, 
+    perishable_compat = true,
+	config = {extra = { Xmult = 2, chips = 0 } },
+	pos = {x = 2, y = 5},
+	soul_pos = {x = 3, y = 5},
+	loc_vars = function(card, info_queue, card)
+		return { vars = { card.ability.extra.Xmult, card.ability.extra.chips } }
+	end,
+	calculate = function(self, card, context)
+		if context.individual and context.cardarea == G.play then
+			if context.other_card:is_face() then
+				card.ability.extra.chips = 40
+				return {
+					chips = card.ability.extra.chips,				
+					x_mult = card.ability.extra.Xmult
+				}
+			end
+			card.ability.extra.chips = context.other_card:get_id() * 4
+			if context.other_card:get_id() == 14 then
+				card.ability.extra.chips = 44
+			end
+			return {
+				chips = card.ability.extra.chips
+			}
+		end
+	end
+}
+SMODS.Joker{
+	key = 'lotion',
+	loc_txt = {
+		name = 'Lotion',
+		text = {
+			'{C:chips}+#1#{} chips,', 
+			'{C:chips}-25{} chips for each',
+			'scored {C:attention}Jack{}.'
+		}
+	},
+	atlas = 'jokers',
+	rarity = 1,
+	cost = 5,
+	unlocked = true,
+	discovered = false,
+	blueprint_compat = true, 
+    eternal_compat = true, 
+    perishable_compat = true,
+	config = {extra = { chips = 250, chip_loss = 25 } },
+	pos = {x = 4, y = 5},
+	loc_vars = function(card, info_queue, card)
+		return { vars = { card.ability.extra.chips, card.ability.extra.chip_loss } }
+	end,
+	calculate = function(self, card, context)
+		if context.joker_main then
+			return {
+				chip_mod = card.ability.extra.chips,
+				message = localize { type = 'variable', key = 'a_chips', vars = { card.ability.extra.chips } }
+			}
+		end
+		if context.individual and context.cardarea == G.play then
+			if context.other_card:get_id() == 11 then
+				if card.ability.extra.chips - card.ability.extra.chip_loss <= 0 then
+					G.E_MANAGER:add_event(Event({
+                        func = function()
+                            play_sound('tarot1')
+                            self.T.r = -0.2
+                            self:juice_up(0.3, 0.4)
+                            self.states.drag.is = true
+                            self.children.center.pinch.x = true
+                            G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.3, blockable = false,
+                                func = function()
+                                        G.jokers:remove_card(self)
+                                        self:remove()
+                                        self = nil
+                                    return true; end})) 
+                            return true
+                        end
+                    })) 
+                    return {
+                        message = 'Empty!',
+                        colour = G.C.FILTER
+                    }
+				end				
+				card.ability.extra.chips = card.ability.extra.chips - card.ability.extra.chip_loss
+				return {
+					delay = 0.2,
+					message = '-' .. card.ability.extra.chip_loss,
+					colour = G.C.CHIPS
+				}
+			end
+		end
+	end
+}
+SMODS.Joker{
+	key = 'ceo',
+	loc_txt = {
+		name = 'CEO',
+		text = {
+			'Gives an extra {C:money}$2{} for every',
+			'consecutive round won with {C:money}$10{} or more.',
+			'{C:inactive}(Currently {C:money}$#1#{C:inactive})'
+		}
+	},
+	atlas = 'jokers',
+	rarity = 2,
+	cost = 7,
+	unlocked = true,
+	discovered = false,
+	blueprint_compat = true, 
+    eternal_compat = true, 
+    perishable_compat = true,
+	config = {extra = { dollars = 0, dollar_gain = 2 } },
+	pos = {x = 5, y = 0},
+	loc_vars = function(card, info_queue, card)
+		return { vars = { card.ability.extra.dollars, card.ability.extra.dollar_gain, G.GAME.dollars } }
+	end,
+	calculate = function(self, card, context)
+		if context.end_of_round and not context.repetition and not context.blueprint  and context.game_over == false and context.cardarea == G.jokers then
+			if G.GAME.dollars >= 10 then
+				card.ability.extra.dollars = card.ability.extra.dollars + card.ability.extra.dollar_gain
+			else
+				card.ability.extra.dollars = 0
+			end
+		end
+	end,
+	calc_dollar_bonus = function(self, card)
+		if card.ability.extra.dollars > 0 then
+			return card.ability.extra.dollars
 		end
 	end
 }
